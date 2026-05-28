@@ -1,0 +1,81 @@
+<div class="progress-container">
+  <div class="progress-card">
+    <div class="progress-header">
+      <h2><i class="fa-solid fa-gears"></i> Processing Job #{{ jobId() }}</h2>
+      <p class="file-name">{{ fileName() }}</p>
+    </div>
+
+
+    <div class="status-badge" [class]="statusLower()">
+      @if (statusLower() === 'pending') {
+      <i class="fa-solid fa-clock"></i> Pending
+      }
+      @if (statusLower() === 'running') {
+      <i class="fa-solid fa-spinner fa-spin"></i> Running
+      }
+      @if (statusLower() === 'completed') {
+      <i class="fa-solid fa-circle-check"></i> Completed
+      }
+      @if (statusLower() === 'failed') {
+      <i class="fa-solid fa-circle-exclamation"></i> Failed
+      }
+      @if (statusLower() === 'cancelled') {
+      <i class="fa-solid fa-ban"></i> Cancelled
+      }
+    </div>
+
+    <div class="progress-bar-wrapper">
+      <div class="progress-bar" [style.width.%]="progressPercent()"></div>
+    </div>
+
+
+    <div class="progress-stats">
+      <div class="stat-item">
+        <span class="stat-label"><i class="fa-solid fa-check"></i> Processed</span>
+        <span class="stat-value">{{ processedRows() }}</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label"><i class="fa-solid fa-list"></i> Total</span>
+        <span class="stat-value">{{ totalRows() }}</span>
+      </div>
+      @if (failedRows() > 0) {
+      <div class="stat-item error">
+        <span class="stat-label"><i class="fa-solid fa-triangle-exclamation"></i> Failed</span>
+        <span class="stat-value">{{ failedRows() }}</span>
+      </div>
+      }
+    </div>
+
+
+    @if (isRunning() && !cancelRequested()) {
+    <button class="btn-cancel" (click)="cancelJob()">
+      <i class="fa-solid fa-stop"></i> Cancel Processing
+    </button>
+    }
+
+    @if (cancelRequested()) {
+    <div class="cancel-message">
+      <p><i class="fa-solid fa-spinner fa-spin"></i> Cancellation requested. Cleaning up...</p>
+    </div>
+    }
+
+
+    @if (errors().length > 0) {
+    <div class="errors-container">
+      <h3><i class="fa-solid fa-bug"></i> {{ errors().length }} error(s) found</h3>
+      <ul class="error-list">
+        @for (error of errors(); track $index) {
+        <li class="error-item">{{ error }}</li>
+        }
+      </ul>
+    </div>
+    }
+
+
+    <div class="actions">
+      <button class="btn-secondary" routerLink="/">
+        <i class="fa-solid fa-arrow-left"></i> Upload Another File
+      </button>
+    </div>
+  </div>
+</div>
