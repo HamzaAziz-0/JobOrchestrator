@@ -25,6 +25,8 @@ joborchestrator.client/src/environments/environment*.ts
 JobOrchestrator.Server/bin/
 JobOrchestrator.Server/obj/
 
+**/appsettings.json
+
 # Solution files (user-specific)
 *.slnLaunch.user
 
