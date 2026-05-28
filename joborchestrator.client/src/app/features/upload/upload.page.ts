@@ -1,8 +1,8 @@
 import { Component, inject, signal, ViewChild, ElementRef, DestroyRef } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-
-@Component({
+import { environment } from '../../../environments/environment.prod';
+  @Component({
   selector: 'app-upload',
   standalone: true,
   templateUrl: './upload.page.html',
@@ -48,7 +48,7 @@ export class UploadPage {
 
   removeFile(event: MouseEvent): void {
 
-    event.stopPropagation(); // Prevent click from opening file picker
+    event.stopPropagation(); 
     this.selectedFile.set(null);
     this.fileInput.nativeElement.value = '';
   }
@@ -62,7 +62,7 @@ export class UploadPage {
     const formData = new FormData();
     formData.append('file', file);
 
-    this.http.post<{ jobId: number }>('/api/jobs', formData).subscribe({
+    this.http.post<{ jobId: number }>(`${environment.apiUrl}/api/jobs`, formData).subscribe({
       next: (res) => {
         this.uploading.set(false);
         this.selectedFile.set(null);

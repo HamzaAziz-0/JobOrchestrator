@@ -1,14 +1,14 @@
 import { Component, OnInit, inject, signal, computed, DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, RouterModule } from '@angular/router';  
+import { ActivatedRoute, RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { SignalrService } from '../../core/services/signalr.service';
 import { Job } from '../../core/models/job.model';
-
-@Component({
+import { environment } from '../../../environments/environment.prod';
+  @Component({
   selector: 'app-progress',
   standalone: true,
-  imports: [RouterModule],  
+  imports: [RouterModule],
   templateUrl: './progress.page.html',
   styleUrls: ['./progress.page.scss'],
 })
@@ -18,7 +18,6 @@ export class ProgressPage implements OnInit {
   private signalrService = inject(SignalrService);
   private destroyRef = inject(DestroyRef);
 
-  // Core job signals
   jobId = signal(0);
   fileName = signal('');
   totalRows = signal(0);
@@ -26,10 +25,8 @@ export class ProgressPage implements OnInit {
   failedRows = signal(0);
   status = signal('Pending');
 
-  // For template comparisons
   statusLower = computed(() => (this.status() || '').toLowerCase());
 
-  // Cancel handling
   cancelRequested = signal(false);
 
   errors = signal<string[]>([]);
@@ -38,8 +35,6 @@ export class ProgressPage implements OnInit {
     const s = this.statusLower();
     return s === 'pending' || s === 'running';
   });
-
-
 
   progressPercent = computed(() => {
     const total = this.totalRows();
@@ -51,13 +46,13 @@ export class ProgressPage implements OnInit {
 
     await this.signalrService.joinJobGroup(this.jobId());
 
-    this.http.get<Job>(`/api/jobs/${this.jobId()}`).subscribe({
+    this.http.get<Job>(`${environment.apiUrl}/api/jobs/${this.jobId()}`).subscribe({
       next: (job) => {
         this.fileName.set(job.fileName);
         this.totalRows.set(job.totalRows);
         this.processedRows.set(job.processedRows);
         this.failedRows.set(job.failedRows ?? 0);
-        this.status.set(String(job.status)); 
+        this.status.set(String(job.status));
         this.errors.set(job.errors ?? []);
       },
     });
@@ -70,7 +65,7 @@ export class ProgressPage implements OnInit {
           this.processedRows.set(progress.processed);
           this.totalRows.set(progress.total);
           this.failedRows.set(progress.failed ?? 0);
-          this.status.set(String(progress.status)); 
+          this.status.set(String(progress.status));
           this.errors.set(progress.errors ?? []);
         }
       });
@@ -80,7 +75,7 @@ export class ProgressPage implements OnInit {
     if (this.cancelRequested()) return;
 
     this.cancelRequested.set(true);
-    this.http.post(`/api/jobs/${this.jobId()}/cancel`, {}).subscribe({
+    this.http.post(`${environment.apiUrl}/api/jobs/${this.jobId()}/cancel`, {}).subscribe({
       next: () => { },
       error: () => {
         this.cancelRequested.set(false);

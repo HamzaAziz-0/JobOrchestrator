@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import * as signalR from '@microsoft/signalr';
 import { Observable } from 'rxjs';
 import { JobProgress } from '../models/jobprogress.model';
+import { environment } from '../../../environments/environment.prod';
 
 @Injectable({ providedIn: 'root' })
 export class SignalrService {
@@ -9,8 +10,8 @@ export class SignalrService {
   private connectionPromise: Promise<void>;
 
   constructor() {
-    this.hubConnection = new signalR.HubConnectionBuilder()
-      .withUrl('/jobhub')
+   this.hubConnection = new signalR.HubConnectionBuilder()
+      .withUrl(environment.hubUrl)
       .withAutomaticReconnect()
       .build();
     this.connectionPromise = this.hubConnection.start();
