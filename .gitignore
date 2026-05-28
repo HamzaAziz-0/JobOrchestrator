@@ -1,0 +1,33 @@
+# Visual Studio files
+.vs/
+*.user
+*.userosscache
+*.sln.docstates
+
+# Build results
+**/[Bb]in/
+**/[Oo]bj/
+**/[Dd]ebug/
+**/[Rr]elease/
+x64/
+x86/
+
+# Frontend (Angular) specific
+joborchestrator.client/node_modules/
+joborchestrator.client/dist/
+joborchestrator.client/.angular/
+
+# Environment files (keep your production URL safe)
+joborchestrator.client/src/environments/environment*.ts
+!joborchestrator.client/src/environments/environment.ts
+
+# Backend (ASP.NET) specific
+JobOrchestrator.Server/bin/
+JobOrchestrator.Server/obj/
+
+# Solution files (user-specific)
+*.slnLaunch.user
+
+# OS files
+.DS_Store
+Thumbs.db

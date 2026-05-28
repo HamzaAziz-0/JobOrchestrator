@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="joborchestrator.client/joborchestrator.client.esproj">
+    <Build />
+    <Deploy />
+  </Project>
+  <Project Path="JobOrchestrator.Server/JobOrchestrator.Server.csproj" />
+</Solution>
