@@ -58,11 +58,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors("AllowAngular");
 
-app.UseDefaultFiles();
-app.UseStaticFiles();
 
 app.MapControllers();
 app.MapHub<JobHub>("/jobhub");
-app.MapFallbackToFile("/index.html");
 
 app.Run();
