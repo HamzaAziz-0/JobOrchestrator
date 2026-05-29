@@ -35,8 +35,8 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowAngular", policy =>
     {
         policy.WithOrigins("https://localhost:59839",
-                            "https://your-app.vercel.app")
-              .AllowAnyMethod()
+                "https://job-orchestrator.vercel.app")
+            .AllowAnyMethod()
               .AllowAnyHeader()
               .AllowCredentials();
     });
