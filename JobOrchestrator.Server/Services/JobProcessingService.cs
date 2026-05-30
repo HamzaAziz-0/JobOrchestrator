@@ -49,6 +49,7 @@ public class JobProcessingService : BackgroundService
             var errors = new List<string>();
             int processed = 0;
             int failed = 0;
+            var startTime = DateTime.UtcNow;
 
             try
             {
@@ -64,48 +65,60 @@ public class JobProcessingService : BackgroundService
 
                 using var reader = new StreamReader(job.FilePath, Encoding.UTF8);
                 using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
-                var records = csv.GetRecords<dynamic>().ToList();
-
-
-                job.TotalRows = records.Count;
-                await db.SaveChangesAsync(cancelToken);
-
                 int rowNumber = 0;
 
-                foreach (var record in records)
+                // stream CSV row by row
+                foreach (var record in csv.GetRecords<dynamic>())
                 {
                     cancelToken.ThrowIfCancellationRequested();
                     rowNumber++;
 
                     var rowDict = (IDictionary<string, object>)record;
                     var rowErrors = ValidateRow(rowDict);
+                    bool success = !rowErrors.Any();
 
-                    if (rowErrors.Any())
+                    if (success)
+                    {
+                        processed++;
+                    }
+                    else
                     {
                         failed++;
                         errors.Add($"Row {rowNumber}: {string.Join(", ", rowErrors)}");
                     }
-                    else
-                    {
-                        processed++;
-                    }
 
-                    if (processed % 10 == 0 || processed == job.TotalRows)
+                    job.ProcessedRows = processed;
+                    job.FailedRows = failed;
+
+                    // Batch SaveChanges every 50 rows
+                    if (rowNumber % 50 == 0)
                     {
-                        job.ProcessedRows = processed;
-                        job.FailedRows = failed;
                         await db.SaveChangesAsync(cancelToken);
-
-                        await _hubContext.Clients.Group($"job-{job.Id}").SendAsync(
-                            "UpdateProgress",
-                            job.Id,
-                            processed,
-                            failed,
-                            job.TotalRows,
-                            job.Status.ToString()
-                        );
                     }
+
+                    // Sending  only current error , not full list
+                    await _hubContext.Clients.Group($"job-{job.Id}").SendAsync(
+                        "RowProcessed",
+                        new
+                        {
+                            JobId = job.Id,
+                            Processed = processed,
+                            Failed = failed,
+                            Total = job.TotalRows,
+                            Status = job.Status.ToString(),
+                            LastRow = rowNumber,
+                            Success = success,
+                            Message = success
+                                ? $"Row {rowNumber} processed successfully"
+                                : $"Row {rowNumber} failed validation",
+                            Timestamp = DateTime.UtcNow,
+                            RecentError = success ? null : string.Join(", ", rowErrors)
+                        }
+                    );
                 }
+
+                // Final save after all rows
+                await db.SaveChangesAsync(cancelToken);
 
                 job.Status = failed > 0 ? JobStatus.Failed : JobStatus.Completed;
                 job.Errors = errors.Count > 0
@@ -128,13 +141,22 @@ public class JobProcessingService : BackgroundService
                 _cancellationStore.Remove(job.Id);
                 await db.SaveChangesAsync(stoppingToken);
 
+                var endTime = DateTime.UtcNow;
+                var duration = endTime - startTime;
+
+                //Final summary with full error list
                 await _hubContext.Clients.Group($"job-{job.Id}").SendAsync(
-                    "UpdateProgress",
-                    job.Id,
-                    processed,
-                    failed,
-                    job.TotalRows,
-                    job.Status.ToString()
+                    "JobCompleted",
+                    new
+                    {
+                        JobId = job.Id,
+                        Status = job.Status.ToString(),
+                        Processed = processed,
+                        Failed = failed,
+                        Total = job.TotalRows,
+                        Duration = duration.TotalSeconds,
+                        Errors = errors.ToList()
+                    }
                 );
             }
         }
@@ -146,7 +168,7 @@ public class JobProcessingService : BackgroundService
 
         if (row.TryGetValue("email", out var email) && !IsValidEmail(email?.ToString()))
         {
-            errors.Add("Invalid email format");
+            errors.Add("Invalid email");
         }
 
         if (row.TryGetValue("age", out var age) && age != null)
@@ -157,13 +179,13 @@ public class JobProcessingService : BackgroundService
             }
             else if (ageValue < 0 || ageValue > 150)
             {
-                errors.Add("Age must be between 0-150");
+                errors.Add("Age must be 0-150");
             }
         }
 
         if (row.TryGetValue("name", out var name) && string.IsNullOrWhiteSpace(name?.ToString()))
         {
-            errors.Add("Name is required");
+            errors.Add("Name required");
         }
 
         return errors;

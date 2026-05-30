@@ -1,8 +1,8 @@
 <div class="upload-container">
   <div class="upload-card">
     <div class="upload-header">
-      <h1><i class="fa-solid fa-cloud-arrow-up"></i> CSV Data Importer</h1>
-      <p>Upload your file and watch the processing happen in real time.</p>
+      <h1>Import CSV</h1>
+      <p>Upload a CSV file to begin processing.</p>
     </div>
 
     <div class="upload-area"
@@ -12,17 +12,22 @@
          (drop)="onDrop($event)"
          (click)="fileInput.click()">
       <div class="upload-icon">
-        <i class="fa-solid fa-file-csv"></i>
+        <i class="fa-solid fa-cloud-arrow-up"></i>
       </div>
 
       @if (!selectedFile()) {
-      <p class="upload-text">Drop your CSV here or <span>browse</span></p>
-      <p class="upload-hint">Only .csv files are supported</p>
+      <div class="upload-text">
+        <span class="primary">Drop your CSV file here</span>
+        <span class="secondary">or click to browse</span>
+      </div>
       } @else {
-      <div class="file-info">
-        <p class="upload-text selected">{{ selectedFile()!.name }}</p>
-        <p class="upload-hint">{{ (selectedFile()!.size / 1024).toFixed(1) }} KB</p>
-        <button class="remove-file" (click)="removeFile($event)" aria-label="Remove file">
+      <div class="file-selected">
+        <div class="file-info">
+          <i class="fa-solid fa-file-csv"></i>
+          <span class="file-name">{{ selectedFile()!.name }}</span>
+          <span class="file-size">{{ (selectedFile()!.size / 1024).toFixed(1) }} KB</span>
+        </div>
+        <button class="remove-btn" (click)="removeFile($event)">
           <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
@@ -39,9 +44,10 @@
             (click)="onUpload()"
             [disabled]="!selectedFile() || uploading()">
       @if (!uploading()) {
-      <i class="fa-solid fa-play"></i> Start Processing
+      <span>Start Processing</span>
       } @else {
-      <span class="spinner"></span> Uploading…
+      <span class="spinner"></span>
+      <span>Uploading…</span>
       }
     </button>
   </div>

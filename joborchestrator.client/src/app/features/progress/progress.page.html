@@ -1,80 +1,150 @@
-<div class="progress-container">
-  <div class="progress-card">
-    <div class="progress-header">
-      <h2><i class="fa-solid fa-gears"></i> Processing Job #{{ jobId() }}</h2>
-      <p class="file-name">{{ fileName() }}</p>
-    </div>
-
-
-    <div class="status-badge" [class]="statusLower()">
-      @if (statusLower() === 'pending') {
-      <i class="fa-solid fa-clock"></i> Pending
-      }
-      @if (statusLower() === 'running') {
-      <i class="fa-solid fa-spinner fa-spin"></i> Running
-      }
-      @if (statusLower() === 'completed') {
-      <i class="fa-solid fa-circle-check"></i> Completed
-      }
-      @if (statusLower() === 'failed') {
-      <i class="fa-solid fa-circle-exclamation"></i> Failed
-      }
-      @if (statusLower() === 'cancelled') {
-      <i class="fa-solid fa-ban"></i> Cancelled
-      }
-    </div>
-
-    <div class="progress-bar-wrapper">
-      <div class="progress-bar" [style.width.%]="progressPercent()"></div>
-    </div>
-
-
-    <div class="progress-stats">
-      <div class="stat-item">
-        <span class="stat-label"><i class="fa-solid fa-check"></i> Processed</span>
-        <span class="stat-value">{{ processedRows() }}</span>
+<div class="dashboard-container">
+  <div class="dashboard-card">
+    <!-- Header -->
+    <div class="header-bar">
+      <div class="header-left">
+        <h2>Job #{{ jobId() }}</h2>
+        <p class="file-name">{{ fileName() }}</p>
       </div>
+      <div class="header-right">
+        <span class="connection-status" [class.connected]="connectionStatus() === 'connected'">
+          <span class="dot"></span>
+          {{ connectionStatus() === 'connected' ? 'Live' : 'Connecting...' }}
+        </span>
+        <span class="status-badge" [class]="statusLower()">
+          {{ status() }}
+        </span>
+      </div>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="stats-grid">
       <div class="stat-item">
-        <span class="stat-label"><i class="fa-solid fa-list"></i> Total</span>
+        <span class="stat-label">Total Rows</span>
         <span class="stat-value">{{ totalRows() }}</span>
       </div>
-      @if (failedRows() > 0) {
+      <div class="stat-item success">
+        <span class="stat-label">Processed</span>
+        <span class="stat-value">{{ processedRows() }}</span>
+      </div>
       <div class="stat-item error">
-        <span class="stat-label"><i class="fa-solid fa-triangle-exclamation"></i> Failed</span>
+        <span class="stat-label">Failed</span>
         <span class="stat-value">{{ failedRows() }}</span>
       </div>
-      }
+      <div class="stat-item">
+        <span class="stat-label">Progress</span>
+        <span class="stat-value">{{ progressPercent() }}%</span>
+      </div>
+      <!-- Speed & ETA Cards -->
+      <div class="stat-item">
+        <span class="stat-label">Speed</span>
+        <span class="stat-value">{{ processingSpeed() }} rows/s</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">ETA</span>
+        <span class="stat-value">
+          @if (eta() !== null) {
+          {{ eta() }}s
+          } @else {
+          —
+          }
+        </span>
+      </div>
     </div>
 
+    <!-- Progress Bar -->
+    <div class="progress-section">
+      <div class="progress-bar-wrapper">
+        <div class="progress-bar" [style.width.%]="progressPercent()"></div>
+      </div>
+      <div class="progress-meta">
+        <!-- ✅ Fixed display: completed rows (processed + failed) -->
+        <span>{{ completedRows() }} / {{ totalRows() }} rows completed</span>
+        @if (isRunning()) {
+        <span>{{ processingSpeed() }} rows/sec</span>
+        @if (eta() !== null) {
+        <span>ETA: {{ eta() }}s</span>
+        }
+        }
+      </div>
+    </div>
 
+    <!-- Terminal Activity Log -->
+    @if (logs().length > 0) {
+    <div class="terminal-log">
+      <div class="log-header">
+        <h4>Activity Log</h4>
+        <span>Latest {{ logs().length }} events</span>
+      </div>
+      <div class="log-container" #logContainer>
+        @for (log of logs(); track $index) {
+        <div class="log-entry" [class.success]="log.success" [class.error]="!log.success">
+          <span class="log-time">{{ formatTime(log.timestamp) }}</span>
+          <span class="log-icon">
+            @if (log.success) { ✓ } @else { ✗ }
+          </span>
+          <span class="log-row">Row {{ log.row }}</span>
+          <span class="log-message">{{ log.message }}</span>
+        </div>
+        }
+      </div>
+    </div>
+    }
+
+    <!-- Cancel -->
     @if (isRunning() && !cancelRequested()) {
     <button class="btn-cancel" (click)="cancelJob()">
-      <i class="fa-solid fa-stop"></i> Cancel Processing
+      Cancel Processing
     </button>
     }
-
     @if (cancelRequested()) {
-    <div class="cancel-message">
-      <p><i class="fa-solid fa-spinner fa-spin"></i> Cancellation requested. Cleaning up...</p>
-    </div>
+    <div class="cancel-message">Cancelling…</div>
     }
 
-
+    <!-- Error Timeline -->
     @if (errors().length > 0) {
-    <div class="errors-container">
-      <h3><i class="fa-solid fa-bug"></i> {{ errors().length }} error(s) found</h3>
+    <div class="errors-section">
+      <div class="errors-header">
+        <h3>Validation Errors ({{ errors().length }})</h3>
+        <button class="btn-ghost" (click)="downloadErrorReport()">
+          Download Error CSV
+        </button>
+      </div>
       <ul class="error-list">
         @for (error of errors(); track $index) {
-        <li class="error-item">{{ error }}</li>
+        <li class="error-item">
+          <span class="error-message">{{ error }}</span>
+        </li>
         }
       </ul>
     </div>
     }
 
+    <!-- Completion Summary -->
+    @if (!isRunning() && statusLower() !== 'pending' && statusLower() !== 'running') {
+    <div class="completion-summary">
+      <div class="summary-header">
+        <h3>Processing Complete</h3>
+        <span class="summary-status" [class]="statusLower()">{{ status() }}</span>
+      </div>
+      <div class="summary-grid">
+        <div><strong>Total:</strong> {{ totalRows() }}</div>
+        <div><strong>Processed:</strong> {{ processedRows() }}</div>
+        <div><strong>Failed:</strong> {{ failedRows() }}</div>
+        @if (duration() !== null) {
+        <div><strong>Duration:</strong> {{ duration()!.toFixed(1) }}s</div>
+        }
+      </div>
+      @if (errors().length === 0) {
+      <div class="no-errors">🎉 No errors found</div>
+      }
+    </div>
+    }
 
+    <!-- Footer -->
     <div class="actions">
       <button class="btn-secondary" routerLink="/">
-        <i class="fa-solid fa-arrow-left"></i> Upload Another File
+        ← Upload Another File
       </button>
     </div>
   </div>
