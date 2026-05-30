@@ -17,13 +17,14 @@ joborchestrator.client/node_modules/
 joborchestrator.client/dist/
 joborchestrator.client/.angular/
 
-# Environment files (keep your production URL safe)
 joborchestrator.client/src/environments/environment*.ts
 !joborchestrator.client/src/environments/environment.ts
 
 # Backend (ASP.NET) specific
 JobOrchestrator.Server/bin/
 JobOrchestrator.Server/obj/
+JobOrchestrator.Server/publish/          
+JobOrchestrator.Server/ftp_/            
 
 **/appsettings.json
 
